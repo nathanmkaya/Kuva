@@ -28,7 +28,7 @@ dependencyResolutionManagement {
     }
 }
 
-include(":composeApp")
+include(":kuva-samples")
 
 plugins {
     // Apply the foojay-resolver plugin to allow automatic download of JDKs
