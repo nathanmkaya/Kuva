@@ -34,12 +34,12 @@ Kuva is a Kotlin Multiplatform (KMP) camera library that unifies Android CameraX
 
 ```mermaid
 graph TD
-  A[App UI (Compose MPP)] -->|calls| B[Kuva Core (commonMain)]
-  B -->|expect/actual| C1[:kuva-android (CameraX)]
-  B -->|expect/actual| C2[:kuva-ios (AVFoundation)]
-  C1 --> D1[Android Camera HAL via CameraX]
-  C2 --> D2[iOS Camera via AVFoundation]
-  B --> E[StateFlow (CameraState, DebugInfo)]
+  A["App UI (Compose MPP)"] -->|calls| B["Kuva Core (commonMain)"]
+  B -->|expect/actual| C1[":kuva-android (CameraX)"]
+  B -->|expect/actual| C2[":kuva-ios (AVFoundation)"]
+  C1 --> D1["Android Camera HAL via CameraX"]
+  C2 --> D2["iOS Camera via AVFoundation"]
+  B --> E["StateFlow (CameraState, DebugInfo)"]
   A -->|overlays/gestures| E
 ```
 
@@ -279,21 +279,21 @@ stateDiagram-v2
 
 ```mermaid
 flowchart LR
-  V[Overlay Tap (x,y) in View coords]
-  N[Normalize to 0..1]
-  M[Map to Sensor Region]
-  A[Apply AF/AE]
+  V["Overlay Tap (x,y) in View coords"]
+  N["Normalize to 0..1"]
+  M["Map to Sensor Region"]
+  A["Apply AF/AE"]
 
   V --> N --> M --> A
 
   subgraph Android
     direction TB
-    P1[PreviewView] --> P2[MeteringPointFactory]
+    P1["PreviewView"] --> P2["MeteringPointFactory"]
   end
 
   subgraph iOS
     direction TB
-    L1[AVCaptureVideoPreviewLayer] --> L2[metadataRect conversion]
+    L1["AVCaptureVideoPreviewLayer"] --> L2["metadataRect conversion"]
   end
 ```
 
