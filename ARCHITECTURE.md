@@ -23,7 +23,7 @@ Kuva is a Kotlin Multiplatform (KMP) camera library that unifies Android CameraX
 ## 2) CUPID Principles
 
 - **Composable**: Core API is small and pluggable; overlays/gestures are opt-in. Debug diagnostics can be added/removed without affecting capture.
-- **Unix Philosophy**: Each module does one thing well `:kuva` (unified camera functionality), `:kuva-ui-compose` (optional UI components), `:kuva-samples` (demo).
+- **Unix Philosophy**: Each module does one thing well `:kuva` (unified Compose-native camera functionality with UI), `:kuva-samples` (demo).
 - **Predictable**: Explicit start/stop, capability queries, Result<T> and CameraError for all ops, stable coordinate mapping.
 - **Idiomatic**: Uses idioms of CameraX/AVFoundation under the hood; StateFlow for reactive UI; Compose-friendly overlay slot.
 - **Domain-based**: Models camera domain concepts (lens, exposure, viewport, capture) directly; capability flags map real device features.
@@ -51,32 +51,29 @@ graph TD
 graph LR
   subgraph Kuva Modules
     kuva[:kuva]
-    ui[:kuva-ui-compose]
     samples[:kuva-samples]
   end
   samples --> kuva
-  samples --> ui
-  ui --> kuva
 ```
 
 ### Responsibilities
-- **:kuva**: unified camera functionality (KMP with commonMain/androidMain/iosMain)
-  - commonMain: public API, models, error types, expect class
-  - androidMain: actual impl via CameraX; ViewPort/UseCaseGroup; mapping helpers
-  - iosMain: actual impl via AVFoundation; preview layer + connection orientation
-- **:kuva-ui-compose**: optional Compose Multiplatform UI components and helpers
-- **:kuva-samples**: demo app, focus ring overlay, pinch zoom, debug HUD
+- **:kuva**: unified Compose-native camera functionality (KMP with commonMain/androidMain/iosMain)
+  - commonMain: public API, models, error types, expect class, Compose UI components
+  - androidMain: actual impl via CameraX; ViewPort/UseCaseGroup; mapping helpers; Android Compose integration
+  - iosMain: actual impl via AVFoundation; preview layer + connection orientation; iOS Compose integration
+- **:kuva-samples**: demo app showcasing camera functionality, focus ring overlay, pinch zoom, debug HUD
 
-### Architectural Decision: Single Module Approach
+### Architectural Decision: Compose-First Single Module Approach
 
-The unified `:kuva` module approach was chosen over separate API/implementation modules for several key reasons:
+The unified Compose-native `:kuva` module approach was chosen for several key reasons:
 
-- **Natural Cohesion**: Camera preview, capture, and controls are tightly coupled - artificial separation creates unnecessary boundaries
+- **Compose-Native Design**: Built specifically for Compose Multiplatform developers, eliminating the need for separate core + UI modules
+- **Natural Cohesion**: Camera preview, capture, controls, and UI components are tightly coupled - artificial separation creates unnecessary boundaries
 - **API Consistency**: Co-located platform code prevents drift and ensures identical behavior across Android/iOS
-- **Consumer Simplicity**: Developers want "camera functionality" as one dependency, not abstract interfaces + implementation
-- **Maintenance Efficiency**: Single codebase eliminates versioning complexity, API drift, and duplicate effort
-- **Publishing Optimization**: One KMP module can publish to both Maven Central (Android) and CocoaPods/XCFramework (iOS)
-- **expect/actual Leverage**: Platform code co-location maximizes KMP's strengths
+- **Consumer Simplicity**: Compose developers want complete camera functionality with ready-to-use UI components in one dependency
+- **Maintenance Efficiency**: Single codebase eliminates versioning complexity between core and UI components
+- **Publishing Optimization**: One Compose-native KMP module publishes to both Maven Central (Android) and CocoaPods/XCFramework (iOS)
+- **expect/actual Leverage**: Platform code co-location maximizes KMP's strengths for both camera logic and UI integration
 
 ---
 
@@ -439,19 +436,85 @@ classDiagram
 
 ---
 
-## 20) Developer Experience (DX) Notes
+## 2) Dual-Level API Philosophy
 
-- **Compose-first**: ship a `KuvaPreview` composable that hosts the platform view and an overlay slot
-- **Provide sample overlays**: focus ring, rule-of-thirds grid, horizon level line
-- **Helper utilities**: pinch-to-zoom gesture → normalized linear zoom
+Kuva provides two levels of API complexity to serve different developer needs:
+
+**Level 1: Simple Defaults (80% use cases)**
+- Zero configuration required - works out of the box
+- Sensible defaults for common scenarios
+- Built-in UI components and gesture handling
+- Automatic permission and lifecycle management
+
+**Level 2: Full Control (20% use cases)**
+- Complete access to KmpCameraController
+- Custom overlay system for advanced UI
+- Fine-grained control over all camera parameters
+- Advanced error handling and state management
+
+This progressive disclosure approach ensures developers can start simple and add complexity only when needed.
+
+## 3) Developer Experience (DX) Priority
+
+### 5-Minute Integration Guide
+1. **Add dependency** - Single line in build.gradle.kts
+2. **Add Composable** - KuvaCameraView with minimal parameters
+3. **Handle photos** - Simple callback for photo capture
+4. **Run app** - Camera works immediately with no additional setup
+
+### Simple API Examples
+```kotlin
+// Minimal setup - production ready
+KuvaCameraView(onPhotoTaken = { savePhoto(it) })
+
+// Common customizations
+KuvaCameraView(
+    config = CameraConfig.selfie(),
+    onPhotoTaken = { savePhoto(it) }
+)
+
+// Advanced control when needed
+val controller = remember { KmpCameraController() }
+KuvaCameraView(controller = controller) {
+    CustomCameraControls(controller)
+}
+```
+
+### Built-in Components
+- **KuvaCameraView**: Main camera composable with integrated preview
+- **CaptureButton**: Styled capture button with loading states
+- **ZoomSlider**: Linear zoom control with smooth animations
+- **FlashButton**: Flash mode toggle with visual feedback
+- **FocusRing**: Animated focus indicator for tap-to-focus
 
 ---
 
 ## 21) Roadmap
 
-- **v0.2**: Video capture parity, image analysis API (YUV/planes), simple ML overlay hooks
-- **v0.3**: RAW capture (where supported), extension effects surfaced as capabilities
-- **v1.0**: Stabilize public API, expand samples, full docs & recipes
+**v0.1**: Drop-in Camera Solution
+- KuvaCameraView with simple defaults and full controller access
+- CameraConfig presets (default, selfie, square, widescreen)
+- Built-in UI components (CaptureButton, ZoomSlider, FlashButton)
+- Automatic permission handling and gesture support
+- 5-minute integration experience
+
+**v0.2**: Enhanced Experience  
+- Video capture with same simple API
+- Advanced Compose UI components and themes
+- Image analysis API for custom processing
+- Performance optimizations and battery efficiency
+
+**v0.3**: Pro Features
+- RAW capture support where available
+- Custom camera effects and filters
+- Advanced gesture customization
+- Professional photography controls
+
+**v1.0**: Production Excellence
+- API stability and comprehensive documentation
+- Advanced troubleshooting and debugging tools
+- Enterprise-grade error handling and logging
+- Complete sample applications showcase
 
 ---
 
