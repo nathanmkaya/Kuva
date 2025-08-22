@@ -347,7 +347,7 @@ Issues and PRs welcome! Please:
 
 ## 📄 License
 
-MIT (proposed). See LICENSE.
+MIT. See [LICENSE](LICENSE).
 
 ---
 
