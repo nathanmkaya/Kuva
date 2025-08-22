@@ -1,6 +1,6 @@
 # Kuva
 
-Kuva (Finnish: image/picture) is a Kotlin Multiplatform camera library that unifies Android CameraX and iOS AVFoundation behind one clean API. It focuses on preview + photo capture with first-class controls (tap-to-focus, zoom, EV, torch/flash), viewport alignment, normalized coordinates, and a lightweight debug HUD—all designed for Compose MPP and modern app architectures.
+Kuva (Finnish: _image/picture_) is a Kotlin Multiplatform camera library that unifies Android CameraX and iOS AVFoundation behind one clean API. It focuses on preview + photo capture with first-class controls (tap-to-focus, zoom, EV, torch/flash), viewport alignment, normalized coordinates, and a lightweight debug HUD—all designed for Compose MPP and modern app architectures.
 
 **One API. Two platforms. Fully controlled preview and capture.**
 
@@ -77,7 +77,7 @@ kotlin {
 }
 ```
 
-iOS integrates via the KMP-produced XCFramework. No Swift wrapper needed—call the Kotlin API from Swift if desired.
+> iOS integrates via the KMP-produced XCFramework. No Swift wrapper needed—call the Kotlin API from Swift if desired.
 
 ---
 
@@ -361,4 +361,4 @@ MIT (proposed). See LICENSE.
 
 ## Why "Kuva"?
 
-Short, friendly, memorable—and a real word for image/picture. Exactly what this library is about.
+> Short, friendly, memorable—and a real word for _image/picture_. Exactly what this library is about.
