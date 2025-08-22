@@ -1,0 +1,119 @@
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+plugins {
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.detekt)
+    id("maven-publish")
+}
+
+kotlin {
+    androidTarget {
+        @OptIn(ExperimentalKotlinGradlePluginApi::class)
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+        publishLibraryVariants("release", "debug")
+    }
+
+    listOf(
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach { iosTarget ->
+        iosTarget.binaries.framework {
+            baseName = "Kuva"
+            isStatic = true
+        }
+    }
+
+    sourceSets {
+        commonMain.dependencies {
+            implementation(libs.androidx.lifecycle.viewmodelCompose)
+            implementation(libs.androidx.lifecycle.runtimeCompose)
+        }
+        
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+        }
+        
+        androidMain.dependencies {
+            // CameraX dependencies
+            implementation(libs.androidx.camera.core)
+            implementation(libs.androidx.camera.camera2)
+            implementation(libs.androidx.camera.lifecycle)
+            implementation(libs.androidx.camera.view)
+            implementation(libs.androidx.core.ktx)
+        }
+        
+        androidInstrumentedTest.dependencies {
+            implementation(libs.androidx.testExt.junit)
+            implementation(libs.androidx.espresso.core)
+        }
+    }
+}
+
+android {
+    namespace = "dev.nathanmkaya.kuva"
+    compileSdk = libs.versions.android.compileSdk.get().toInt()
+
+    defaultConfig {
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles("consumer-rules.pro")
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+    
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "dev.nathanmkaya.kuva"
+            artifactId = "kuva"
+            version = "0.1.0-SNAPSHOT"
+            
+            pom {
+                name.set("Kuva")
+                description.set("Kotlin Multiplatform camera library unifying Android CameraX and iOS AVFoundation")
+                url.set("https://github.com/nathanmkaya/Kuva")
+                
+                licenses {
+                    license {
+                        name.set("MIT License")
+                        url.set("https://opensource.org/licenses/MIT")
+                    }
+                }
+                
+                developers {
+                    developer {
+                        id.set("nathanmkaya")
+                        name.set("Nathan Mkaya")
+                        email.set("nathanmkaya@gmail.com")
+                    }
+                }
+                
+                scm {
+                    connection.set("scm:git:git://github.com/nathanmkaya/Kuva.git")
+                    developerConnection.set("scm:git:ssh://github.com:nathanmkaya/Kuva.git")
+                    url.set("https://github.com/nathanmkaya/Kuva/tree/main")
+                }
+            }
+        }
+    }
+}

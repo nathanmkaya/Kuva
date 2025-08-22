@@ -1,6 +1,7 @@
 rootProject.name = "Kuva"
 
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+// Temporarily disabled due to module name conflict
+// enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
     repositories {
@@ -30,6 +31,7 @@ dependencyResolutionManagement {
 }
 
 include(":kuva-samples")
+include(":kuva")
 
 plugins {
     // Apply the foojay-resolver plugin to allow automatic download of JDKs
