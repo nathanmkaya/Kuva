@@ -103,3 +103,5 @@ venv.bak/
 secrets.properties
 keystore.properties
 signing.properties
+# Ignore Gradle build output directory
+build
