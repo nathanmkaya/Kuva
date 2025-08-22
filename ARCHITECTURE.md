@@ -23,7 +23,7 @@ Kuva is a Kotlin Multiplatform (KMP) camera library that unifies Android CameraX
 ## 2) CUPID Principles
 
 - **Composable**: Core API is small and pluggable; overlays/gestures are opt-in. Debug diagnostics can be added/removed without affecting capture.
-- **Unix Philosophy**: Each module does one thing well `:kuva-core` (API), `:kuva-android` (CameraX), `:kuva-ios` (AVFoundation), `:kuva-samples` (demo).
+- **Unix Philosophy**: Each module does one thing well `:kuva` (unified camera functionality), `:kuva-ui-compose` (optional UI components), `:kuva-samples` (demo).
 - **Predictable**: Explicit start/stop, capability queries, Result<T> and CameraError for all ops, stable coordinate mapping.
 - **Idiomatic**: Uses idioms of CameraX/AVFoundation under the hood; StateFlow for reactive UI; Compose-friendly overlay slot.
 - **Domain-based**: Models camera domain concepts (lens, exposure, viewport, capture) directly; capability flags map real device features.
@@ -35,8 +35,8 @@ Kuva is a Kotlin Multiplatform (KMP) camera library that unifies Android CameraX
 ```mermaid
 graph TD
   A["App UI (Compose MPP)"] -->|calls| B["Kuva Core (commonMain)"]
-  B -->|expect/actual| C1[":kuva-android (CameraX)"]
-  B -->|expect/actual| C2[":kuva-ios (AVFoundation)"]
+  B -->|androidMain| C1["CameraX Implementation"]
+  B -->|iosMain| C2["AVFoundation Implementation"]
   C1 --> D1["Android Camera HAL via CameraX"]
   C2 --> D2["iOS Camera via AVFoundation"]
   B --> E["StateFlow (CameraState, DebugInfo)"]
@@ -50,23 +50,33 @@ graph TD
 ```mermaid
 graph LR
   subgraph Kuva Modules
-    core[:kuva-core]
-    and[:kuva-android]
-    ios[:kuva-ios]
+    kuva[:kuva]
+    ui[:kuva-ui-compose]
     samples[:kuva-samples]
   end
-  core --> and
-  core --> ios
-  samples --> core
-  samples --> and
-  samples --> ios
+  samples --> kuva
+  samples --> ui
+  ui --> kuva
 ```
 
 ### Responsibilities
-- **:kuva-core**: public API, models, error types, controller expect class
-- **:kuva-android**: actual impl via CameraX; ViewPort/UseCaseGroup; mapping helpers
-- **:kuva-ios**: actual impl via AVFoundation; preview layer + connection orientation
+- **:kuva**: unified camera functionality (KMP with commonMain/androidMain/iosMain)
+  - commonMain: public API, models, error types, expect class
+  - androidMain: actual impl via CameraX; ViewPort/UseCaseGroup; mapping helpers
+  - iosMain: actual impl via AVFoundation; preview layer + connection orientation
+- **:kuva-ui-compose**: optional Compose Multiplatform UI components and helpers
 - **:kuva-samples**: demo app, focus ring overlay, pinch zoom, debug HUD
+
+### Architectural Decision: Single Module Approach
+
+The unified `:kuva` module approach was chosen over separate API/implementation modules for several key reasons:
+
+- **Natural Cohesion**: Camera preview, capture, and controls are tightly coupled - artificial separation creates unnecessary boundaries
+- **API Consistency**: Co-located platform code prevents drift and ensures identical behavior across Android/iOS
+- **Consumer Simplicity**: Developers want "camera functionality" as one dependency, not abstract interfaces + implementation
+- **Maintenance Efficiency**: Single codebase eliminates versioning complexity, API drift, and duplicate effort
+- **Publishing Optimization**: One KMP module can publish to both Maven Central (Android) and CocoaPods/XCFramework (iOS)
+- **expect/actual Leverage**: Platform code co-location maximizes KMP's strengths
 
 ---
 

@@ -22,9 +22,8 @@ Kuva (Finnish: _image/picture_) is a Kotlin Multiplatform camera library that un
 ## 🔧 Modules
 
 ```
-:kuva-core       // common API (expect/actual)
-:kuva-android    // CameraX implementation
-:kuva-ios        // AVFoundation implementation
+:kuva            // core camera functionality (KMP with androidMain/iosMain)
+:kuva-ui-compose // optional Compose Multiplatform UI components
 :kuva-samples    // sample app with debug HUD, overlays, gestures
 ```
 
@@ -56,21 +55,9 @@ kotlin {
   sourceSets {
     val commonMain by getting {
       dependencies {
-        implementation("dev.nathanmkaya.kuva:kuva-core:0.1.0")
-      }
-    }
-    val androidMain by getting {
-      dependencies {
-        implementation("dev.nathanmkaya.kuva:kuva-android:0.1.0")
-        implementation("androidx.camera:camera-core:1.3.4")
-        implementation("androidx.camera:camera-camera2:1.3.4")
-        implementation("androidx.camera:camera-lifecycle:1.3.4")
-        implementation("androidx.camera:camera-view:1.3.4")
-      }
-    }
-    val iosMain by getting {
-      dependencies {
-        implementation("dev.nathanmkaya.kuva:kuva-ios:0.1.0")
+        implementation("dev.nathanmkaya.kuva:kuva:0.1.0")
+        // Optional: add UI components
+        // implementation("dev.nathanmkaya.kuva:kuva-ui-compose:0.1.0")
       }
     }
   }
