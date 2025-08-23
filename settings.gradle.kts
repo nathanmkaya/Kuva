@@ -1,7 +1,6 @@
-rootProject.name = "Kuva"
+@file:Suppress("UnstableApiUsage")
 
-// Temporarily disabled due to module name conflict
-// enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+rootProject.name = "Kuva"
 
 pluginManagement {
     repositories {
