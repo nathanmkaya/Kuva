@@ -1,5 +1,15 @@
 package dev.nathanmkaya.kuva.core
 
+/**
+ * Represents the result of a photo capture.
+ *
+ * @property bytes The photo data.
+ * @property width The width of the photo.
+ * @property height The height of the photo.
+ * @property rotationDegrees The rotation of the photo in degrees.
+ * @property exifOrientationTag The EXIF orientation tag of the photo.
+ * @property mimeType The MIME type of the photo. Defaults to "image/jpeg".
+ */
 data class PhotoResult(
     val bytes: ByteArray,
     val width: Int,

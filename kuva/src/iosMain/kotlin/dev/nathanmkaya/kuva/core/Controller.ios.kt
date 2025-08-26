@@ -61,9 +61,17 @@ import platform.UIKit.UIDeviceOrientation
 import platform.UIKit.UIView
 import platform.darwin.NSObject
 
+/**
+ * Creates a new iOS-specific [Controller] instance.
+ *
+ * @param config The [Config] to use for the controller.
+ * @param previewHost The [PreviewHost] to display the camera preview on.
+ * @return A new [Controller] instance.
+ */
 actual fun createController(config: Config, previewHost: PreviewHost): Controller =
     IosController(config, previewHost)
 
+/** The iOS-specific implementation of the [Controller] interface. */
 private class IosController(private var config: Config, private val previewHost: PreviewHost) :
     Controller {
 
@@ -87,6 +95,7 @@ private class IosController(private var config: Config, private val previewHost:
         _status.update { CameraStatus.Initializing }
         session.beginConfiguration()
 
+        // Select the camera device
         val position =
             if (config.lens == Lens.BACK) AVCaptureDevicePositionBack
             else AVCaptureDevicePositionFront
@@ -98,13 +107,16 @@ private class IosController(private var config: Config, private val previewHost:
             )
         device = (discovery.devices.firstOrNull() as? AVCaptureDevice) ?: error("No camera")
 
+        // Add the device input to the session
         val input = AVCaptureDeviceInput.deviceInputWithDevice(device!!, error = null)
         input?.let { if (session.canAddInput(input)) session.addInput(input) }
 
+        // Add the photo output to the session
         val po = AVCapturePhotoOutput()
         if (session.canAddOutput(po)) session.addOutput(po)
         photoOutput = po
 
+        // Configure the preview layer
         previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill
         previewLayer.setSession(session)
         if (previewLayer.superlayer == null) {
@@ -113,11 +125,12 @@ private class IosController(private var config: Config, private val previewHost:
         previewLayer.frame = (previewHost.native as UIView).bounds
         applyPreviewOrientation()
 
+        // Start the session
         session.commitConfiguration()
         session.startRunning()
         _status.update { CameraStatus.Running }
 
-        // Zoom bounds
+        // Get the zoom bounds
         device?.activeFormat?.let { fmt ->
             minZoom = 1f
             maxZoom = (device?.activeFormat?.videoMaxZoomFactor ?: 1.0).toFloat()

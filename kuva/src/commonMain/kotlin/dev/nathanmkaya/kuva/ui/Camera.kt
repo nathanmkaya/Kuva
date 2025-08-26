@@ -14,6 +14,15 @@ import dev.nathanmkaya.kuva.core.bindTo
 import dev.nathanmkaya.kuva.core.createController
 import dev.nathanmkaya.kuva.core.rememberPlatformContext
 
+/**
+ * A composable that displays a camera preview and provides a controller for interacting with the
+ * camera.
+ *
+ * @param config The camera configuration.
+ * @param lifecycleOwner The lifecycle owner to bind the camera controller to.
+ * @param modifier The modifier to apply to the camera preview.
+ * @param onControllerReady A callback that is invoked when the camera controller is ready.
+ */
 @Composable
 fun Camera(
     config: Config,

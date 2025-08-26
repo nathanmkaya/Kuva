@@ -26,6 +26,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.suspendCancellableCoroutine
 
+/**
+ * Creates a new Android-specific [Controller] instance.
+ *
+ * @param config The [Config] to use for the controller.
+ * @param previewHost The [PreviewHost] to display the camera preview on.
+ * @return A new [Controller] instance.
+ */
 actual fun createController(config: Config, previewHost: PreviewHost): Controller =
     AndroidController(config, previewHost)
 
@@ -37,6 +44,7 @@ private fun mapAspectRatio(hint: AspectRatioHint): Int? =
         AspectRatioHint.SQUARE -> AspectRatio.RATIO_DEFAULT
     }
 
+/** The Android-specific implementation of the [Controller] interface. */
 private class AndroidController(private var config: Config, private val previewHost: PreviewHost) :
     Controller {
 
@@ -61,6 +69,7 @@ private class AndroidController(private var config: Config, private val previewH
     override suspend fun start() {
         _status.update { CameraStatus.Initializing }
 
+        // Get the camera provider
         if (provider == null) {
             provider = suspendCancellableCoroutine { cont ->
                 val future = ProcessCameraProvider.getInstance((previewHost.native as View).context)
@@ -81,10 +90,12 @@ private class AndroidController(private var config: Config, private val previewH
 
         pv.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> updateRotations() }
 
+        // Select the camera lens
         val selector =
             if (config.lens == Lens.BACK) CameraSelector.DEFAULT_BACK_CAMERA
             else CameraSelector.DEFAULT_FRONT_CAMERA
 
+        // Create the preview use case
         val preview =
             Preview.Builder()
                 .apply {
@@ -94,6 +105,7 @@ private class AndroidController(private var config: Config, private val previewH
                 .build()
                 .also { it.surfaceProvider = pv.surfaceProvider }
 
+        // Create the image capture use case
         val capture =
             ImageCapture.Builder()
                 .apply {
@@ -113,6 +125,7 @@ private class AndroidController(private var config: Config, private val previewH
         val useCases = mutableListOf(preview, capture)
 
         try {
+            // Bind the use cases to the camera
             provider?.unbindAll()
             camera =
                 provider?.bindToLifecycle(
