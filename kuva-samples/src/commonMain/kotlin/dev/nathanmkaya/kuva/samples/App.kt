@@ -1,50 +1,41 @@
 package dev.nathanmkaya.kuva.samples
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import kuva.kuva_samples.generated.resources.Res
-import kuva.kuva_samples.generated.resources.compose_multiplatform
-import org.jetbrains.compose.resources.painterResource
+import dev.icerock.moko.permissions.Permission
+import dev.icerock.moko.permissions.PermissionState
+import dev.icerock.moko.permissions.PermissionsController
+import dev.icerock.moko.permissions.camera.CAMERA
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
 @Preview
-fun App() {
+fun App(modifier: Modifier = Modifier, controller: PermissionsController) {
     MaterialTheme {
-        var showContent by remember { mutableStateOf(false) }
-        Column(
-            modifier =
-                Modifier.background(MaterialTheme.colorScheme.primaryContainer)
-                    .safeContentPadding()
-                    .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Button(onClick = { showContent = !showContent }) { Text("Click me!") }
-            AnimatedVisibility(showContent) {
-                val greeting = remember { Greeting().greet() }
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose: $greeting")
-                }
-            }
+        val coroutineScope: CoroutineScope = rememberCoroutineScope()
+        var isCameraPermissionGranted: Boolean by remember { mutableStateOf(false) }
+
+        LaunchedEffect(controller) {
+            isCameraPermissionGranted =
+                controller.getPermissionState(Permission.CAMERA) == PermissionState.Granted
         }
+
+        CameraScreen(
+            modifier = modifier,
+            hasPermission = isCameraPermissionGranted,
+            onRequestPermission = {
+                coroutineScope.launch { controller.providePermission(Permission.CAMERA) }
+            },
+            onResult = { println("Photo result: $it") },
+        )
     }
 }

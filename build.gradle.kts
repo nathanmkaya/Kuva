@@ -12,8 +12,6 @@ plugins {
 }
 
 allprojects {
-
-
     tasks.withType<Detekt> {
         reports {
             xml.required.set(true)
@@ -56,6 +54,4 @@ tasks.register("detektAll") {
     subprojects.forEach { sub -> dependsOn(sub.tasks.withType<Detekt>()) }
 }
 
-dependencies {
-    detektPlugins(libs.detekt.compose)
-}
+dependencies { detektPlugins(libs.detekt.compose) }

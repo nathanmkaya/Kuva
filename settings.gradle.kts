@@ -30,6 +30,7 @@ dependencyResolutionManagement {
 }
 
 include(":kuva-samples")
+
 include(":kuva")
 
 plugins {
