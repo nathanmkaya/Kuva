@@ -52,6 +52,7 @@ private class AndroidController(private var config: Config, private val previewH
     private var camera: Camera? = null
     private var preview: Preview? = null
     private var imageCapture: ImageCapture? = null
+    private var layoutChangeListener: View.OnLayoutChangeListener? = null
 
     private val _status = MutableStateFlow<CameraStatus>(CameraStatus.Idle)
 
@@ -68,8 +69,20 @@ private class AndroidController(private var config: Config, private val previewH
 
     override suspend fun start() {
         _status.update { CameraStatus.Initializing }
-
-        // Get the camera provider
+        
+        try {
+            setupCameraProvider()
+            val previewView = setupPreviewView()
+            val cameraSelector = createCameraSelector()
+            val useCases = createUseCases(previewView)
+            bindCamera(previewView, cameraSelector, useCases)
+            _status.update { CameraStatus.Running }
+        } catch (e: Exception) {
+            handleCameraError(e)
+        }
+    }
+    
+    private suspend fun setupCameraProvider() {
         if (provider == null) {
             provider = suspendCancellableCoroutine { cont ->
                 val future = ProcessCameraProvider.getInstance((previewHost.native as View).context)
@@ -85,71 +98,76 @@ private class AndroidController(private var config: Config, private val previewH
                 )
             }
         }
-
-        val pv = previewHost.native as PreviewView
-
-        pv.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> updateRotations() }
-
-        // Select the camera lens
-        val selector =
-            if (config.lens == Lens.BACK) CameraSelector.DEFAULT_BACK_CAMERA
-            else CameraSelector.DEFAULT_FRONT_CAMERA
-
-        // Create the preview use case
-        val preview =
-            Preview.Builder()
-                .apply {
-                    mapAspectRatio(config.aspectRatio)?.let { setTargetAspectRatio(it) }
-                    setTargetRotation(pv.display.rotation)
-                }
-                .build()
-                .also { it.surfaceProvider = pv.surfaceProvider }
-
-        // Create the image capture use case
-        val capture =
-            ImageCapture.Builder()
-                .apply {
-                    mapAspectRatio(config.aspectRatio)?.let { setTargetAspectRatio(it) }
-                    setTargetRotation(pv.display.rotation)
-                    setFlashMode(
-                        when (config.flash) {
-                            Flash.OFF -> ImageCapture.FLASH_MODE_OFF
-                            Flash.ON -> ImageCapture.FLASH_MODE_ON
-                            Flash.AUTO -> ImageCapture.FLASH_MODE_AUTO
-                        }
-                    )
-                }
-                .build()
-                .also { imageCapture = it }
-
-        val useCases = mutableListOf(preview, capture)
-
-        try {
-            // Bind the use cases to the camera
-            provider?.unbindAll()
-            camera =
-                provider?.bindToLifecycle(
-                    resolveLifecycleOwner(pv),
-                    selector,
-                    *useCases.toTypedArray(),
-                )
-            camera?.cameraInfo?.zoomState?.value?.let { zs ->
-                minZoom = zs.minZoomRatio
-                maxZoom = zs.maxZoomRatio
+    }
+    
+    private fun setupPreviewView(): PreviewView {
+        val previewView = previewHost.native as PreviewView
+        layoutChangeListener = View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> updateRotations() }
+        previewView.addOnLayoutChangeListener(layoutChangeListener)
+        return previewView
+    }
+    
+    private fun createCameraSelector(): CameraSelector {
+        return if (config.lens == Lens.BACK) {
+            CameraSelector.DEFAULT_BACK_CAMERA
+        } else {
+            CameraSelector.DEFAULT_FRONT_CAMERA
+        }
+    }
+    
+    private fun createUseCases(previewView: PreviewView): Pair<Preview, ImageCapture> {
+        val preview = Preview.Builder()
+            .apply {
+                mapAspectRatio(config.aspectRatio)?.let { setTargetAspectRatio(it) }
+                setTargetRotation(previewView.display.rotation)
             }
-            _status.update { CameraStatus.Running }
-        } catch (e: Exception) {
-            _status.update {
-                when (e) {
-                    is SecurityException ->
-                        CameraStatus.Error("Permission denied", Error.PermissionDenied)
-
-                    else ->
-                        CameraStatus.Error(
-                            e.message ?: "Unknown",
-                            Error.Unknown(e.message.orEmpty(), e),
-                        )
-                }
+            .build()
+            .also { it.surfaceProvider = previewView.surfaceProvider }
+            
+        val capture = ImageCapture.Builder()
+            .apply {
+                mapAspectRatio(config.aspectRatio)?.let { setTargetAspectRatio(it) }
+                setTargetRotation(previewView.display.rotation)
+                setFlashMode(
+                    when (config.flash) {
+                        Flash.OFF -> ImageCapture.FLASH_MODE_OFF
+                        Flash.ON -> ImageCapture.FLASH_MODE_ON
+                        Flash.AUTO -> ImageCapture.FLASH_MODE_AUTO
+                    }
+                )
+            }
+            .build()
+            .also { imageCapture = it }
+            
+        return Pair(preview, capture)
+    }
+    
+    private fun bindCamera(previewView: PreviewView, selector: CameraSelector, useCases: Pair<Preview, ImageCapture>) {
+        provider?.unbindAll()
+        camera = provider?.bindToLifecycle(
+            resolveLifecycleOwner(previewView),
+            selector,
+            useCases.first,
+            useCases.second,
+        )
+        
+        // Update zoom capabilities
+        camera?.cameraInfo?.zoomState?.value?.let { zoomState ->
+            minZoom = zoomState.minZoomRatio
+            maxZoom = zoomState.maxZoomRatio
+        }
+    }
+    
+    private fun handleCameraError(exception: Exception) {
+        _status.update {
+            when (exception) {
+                is SecurityException ->
+                    CameraStatus.Error("Permission denied", Error.PermissionDenied)
+                else ->
+                    CameraStatus.Error(
+                        exception.message ?: "Unknown",
+                        Error.Unknown(exception.message.orEmpty(), exception),
+                    )
             }
         }
     }
@@ -169,8 +187,9 @@ private class AndroidController(private var config: Config, private val previewH
         imageCapture = null
 
         // Clear listeners
-        val pv = previewHost.native as PreviewView
-        // TODO: pv.removeOnLayoutChangeListener({})
+        val previewView = previewHost.native as PreviewView
+        layoutChangeListener?.let { previewView.removeOnLayoutChangeListener(it) }
+        layoutChangeListener = null
 
         // Update final status
         _status.update { CameraStatus.Idle }
