@@ -109,67 +109,70 @@ private class IosController(private var config: Config, private val previewHost:
 
     override suspend fun start() {
         _status.update { CameraStatus.Initializing }
-        
+
         if (!ensureAuthorized()) {
             _status.update { CameraStatus.Error("Permission denied") }
             return
         }
-        
+
         configureSession()
         setupPreviewLayer()
         startSession()
         updateZoomBounds()
         _status.update { CameraStatus.Running }
     }
-    
+
     private fun configureSession() {
         session.beginConfiguration()
         session.sessionPreset = AVCaptureSessionPresetPhoto
-        
+
         setupCameraDevice()
         clearExistingInputsOutputs()
         addCameraInput()
         addPhotoOutput()
-        
+
         session.commitConfiguration()
     }
-    
+
     private fun setupCameraDevice() {
-        val position = if (config.lens == Lens.BACK) {
-            AVCaptureDevicePositionBack
-        } else {
-            AVCaptureDevicePositionFront
-        }
-        
-        val discovery = AVCaptureDeviceDiscoverySession.discoverySessionWithDeviceTypes(
-            deviceTypes = listOf(AVCaptureDeviceTypeBuiltInWideAngleCamera),
-            mediaType = AVMediaTypeVideo,
-            position = position,
-        )
-        
+        val position =
+            if (config.lens == Lens.BACK) {
+                AVCaptureDevicePositionBack
+            } else {
+                AVCaptureDevicePositionFront
+            }
+
+        val discovery =
+            AVCaptureDeviceDiscoverySession.discoverySessionWithDeviceTypes(
+                deviceTypes = listOf(AVCaptureDeviceTypeBuiltInWideAngleCamera),
+                mediaType = AVMediaTypeVideo,
+                position = position,
+            )
+
         device = (discovery.devices.firstOrNull() as? AVCaptureDevice) ?: error("No camera")
     }
-    
+
     private fun clearExistingInputsOutputs() {
         // Remove existing IO (iterate over snapshots!)
         session.inputs.toList().forEach { session.removeInput(it as AVCaptureInput) }
         session.outputs.toList().forEach { session.removeOutput(it as AVCaptureOutput) }
     }
-    
+
     private fun addCameraInput() {
-        val input = AVCaptureDeviceInput.deviceInputWithDevice(device!!, error = null)
-            ?: error("Failed to create camera input")
+        val input =
+            AVCaptureDeviceInput.deviceInputWithDevice(device!!, error = null)
+                ?: error("Failed to create camera input")
         require(session.canAddInput(input)) { "Cannot add camera input to session" }
         session.addInput(input)
     }
-    
+
     private fun addPhotoOutput() {
         val photoOutput = AVCapturePhotoOutput()
         require(session.canAddOutput(photoOutput)) { "Cannot add photo output to session" }
         session.addOutput(photoOutput)
         this.photoOutput = photoOutput
     }
-    
+
     private fun setupPreviewLayer() {
         onMain {
             val container = previewHost.native as PreviewContainerView
@@ -182,16 +185,14 @@ private class IosController(private var config: Config, private val previewHost:
         }
         beginOrientationUpdates() // keep preview orientation fresh
     }
-    
+
     private fun startSession() {
         // Start session off main to avoid jank
         dispatch_async(dispatch_get_global_queue(0, 0u)) { session.startRunning() }
     }
-    
+
     private fun updateZoomBounds() {
-        device?.activeFormat?.let { fmt ->
-            _maxZoom.update { fmt.videoMaxZoomFactor.toFloat() }
-        }
+        device?.activeFormat?.let { fmt -> _maxZoom.update { fmt.videoMaxZoomFactor.toFloat() } }
     }
 
     override suspend fun stop() {

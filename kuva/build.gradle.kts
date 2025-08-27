@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.detekt)
-    id("maven-publish")
+    alias(libs.plugins.publish)
 }
 
 kotlin {
@@ -16,7 +16,7 @@ kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
         }
-        publishLibraryVariants("release", "debug")
+        publishLibraryVariants("release")
     }
 
     listOf(
@@ -93,39 +93,38 @@ android {
     }
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            groupId = "dev.nathanmkaya.kuva"
-            artifactId = "kuva"
-            version = "0.1.0-SNAPSHOT"
-            
-            pom {
-                name.set("Kuva")
-                description.set("Kotlin Multiplatform camera library unifying Android CameraX and iOS AVFoundation")
-                url.set("https://github.com/nathanmkaya/Kuva")
-                
-                licenses {
-                    license {
-                        name.set("MIT License")
-                        url.set("https://opensource.org/licenses/MIT")
-                    }
-                }
-                
-                developers {
-                    developer {
-                        id.set("nathanmkaya")
-                        name.set("Nathan Mkaya")
-                        email.set("nathanmkaya@gmail.com")
-                    }
-                }
-                
-                scm {
-                    connection.set("scm:git:git://github.com/nathanmkaya/Kuva.git")
-                    developerConnection.set("scm:git:ssh://github.com:nathanmkaya/Kuva.git")
-                    url.set("https://github.com/nathanmkaya/Kuva/tree/main")
-                }
+mavenPublishing {
+    publishToMavenCentral()
+
+    signAllPublications()
+
+    coordinates("dev.nathanmkaya.kuva", "kuva", "0.1.0")
+
+    pom {
+        name.set("Kuva")
+        description.set("Kotlin Multiplatform camera library unifying Android CameraX and iOS AVFoundation")
+        url.set("https://github.com/nathanmkaya/Kuva")
+
+        licenses {
+            license {
+                name.set("MIT License")
+                url.set("https://opensource.org/licenses/MIT")
             }
         }
+
+        developers {
+            developer {
+                id.set("nathanmkaya")
+                name.set("Nathan Mkaya")
+                email.set("nathanmkaya@gmail.com")
+            }
+        }
+
+        scm {
+            connection.set("scm:git:git://github.com/nathanmkaya/Kuva.git")
+            developerConnection.set("scm:git:ssh://github.com:nathanmkaya/Kuva.git")
+            url.set("https://github.com/nathanmkaya/Kuva/tree/main")
+        }
     }
+
 }

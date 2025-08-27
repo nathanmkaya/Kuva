@@ -25,12 +25,12 @@ data class PhotoResult(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is PhotoResult) return false
-        return bytes.contentEquals(other.bytes) && 
-               width == other.width && 
-               height == other.height &&
-               rotationDegrees == other.rotationDegrees &&
-               exifOrientationTag == other.exifOrientationTag &&
-               mimeType == other.mimeType
+        return bytes.contentEquals(other.bytes) &&
+            width == other.width &&
+            height == other.height &&
+            rotationDegrees == other.rotationDegrees &&
+            exifOrientationTag == other.exifOrientationTag &&
+            mimeType == other.mimeType
     }
 
     override fun hashCode(): Int {

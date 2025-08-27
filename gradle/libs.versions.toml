@@ -20,6 +20,7 @@ spotless = "7.2.1"
 detekt = "1.23.8"
 composeRules = "0.4.27"
 exif = "1.4.1"
+publish = "0.34.0"
 
 [libraries]
 androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "cameraCamera2" }
@@ -48,3 +49,4 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+publish = { id = "com.vanniktech.maven.publish", version.ref = "publish" }
