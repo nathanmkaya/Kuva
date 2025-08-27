@@ -19,23 +19,26 @@ Kuva (Finnish: _image/picture_) is a lean Kotlin Multiplatform camera library th
 - **Live Preview**: Cross-platform camera preview with tap-to-focus
 - **Camera Controls**: Lens switching, flash/torch, zoom with native limits
 - **Aspect Ratios**: 4:3, 16:9, Square aspect ratio hints
-- **Frame Analysis**: Optional YUV420 plugin system for QR/barcode scanning
-- **Lifecycle Binding**: Automatic start/stop with AndroidX Lifecycle KMP
+- **Lifecycle Binding**: Automatic start/stop with AndroidX Lifecycle
+- **Gesture Support**: Built-in tap-to-focus and pinch-to-zoom
 
 ## Quick Start
 
 ### 1. Basic Setup
 
 ```kotlin
+import dev.nathanmkaya.kuva.core.*
+import dev.nathanmkaya.kuva.ui.Preview
+
 @Composable
 fun CameraScreen(lifecycleOwner: LifecycleOwner) {
     val context = rememberPlatformContext()
-    val host = remember { KuvaPreviewHost(context) }
+    val host = remember { PreviewHost(context) }
     val controller = remember { 
-        createKuvaController(
-            config = KuvaConfig(
-                lens = Lens.Back,
-                aspectRatio = AspectRatioHint.Ratio16_9,
+        createController(
+            config = Config(
+                lens = Lens.BACK,
+                aspectRatio = AspectRatioHint.RATIO_16_9,
                 enableTapToFocus = true
             ),
             previewHost = host
@@ -44,19 +47,19 @@ fun CameraScreen(lifecycleOwner: LifecycleOwner) {
     
     val scope = rememberCoroutineScope()
     
-    // Automatic lifecycle binding
+    // Automatic lifecycle binding (Android)
     DisposableEffect(controller, lifecycleOwner.lifecycle) {
         val binding = controller.bindTo(lifecycleOwner.lifecycle, scope)
         onDispose { binding.close() }
     }
     
     Box(Modifier.fillMaxSize()) {
-        KuvaPreview(controller, host, Modifier.fillMaxSize())
+        Preview(controller, host, Modifier.fillMaxSize())
         
         // Tap-to-focus overlay
         Box(
             Modifier
-                .matchParentSize()
+                .fillMaxSize()
                 .pointerInput(Unit) {
                     detectTapGestures { offset ->
                         val normalizedX = offset.x / size.width
@@ -71,7 +74,54 @@ fun CameraScreen(lifecycleOwner: LifecycleOwner) {
 }
 ```
 
-### 2. Photo Capture
+<details>
+<summary>Show all imports</summary>
+
+```kotlin
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.lifecycle.LifecycleOwner
+import kotlinx.coroutines.launch
+```
+</details>
+
+### 2. Using the Camera Composable
+
+For simpler integration, use the high-level `Camera` composable:
+
+```kotlin
+import dev.nathanmkaya.kuva.core.*
+import dev.nathanmkaya.kuva.ui.Camera
+
+@Composable
+fun SimpleCameraScreen() {
+    val lifecycleOwner = LocalLifecycleOwner.current // Android
+    var controller by remember { mutableStateOf<Controller?>(null) }
+    
+    Camera(
+        config = Config(
+            lens = Lens.BACK,
+            flash = Flash.OFF,
+            aspectRatio = AspectRatioHint.RATIO_16_9,
+            enableTapToFocus = true
+        ),
+        lifecycleOwner = lifecycleOwner,
+        modifier = Modifier.fillMaxSize(),
+        onControllerReady = { controller = it }
+    )
+}
+```
+
+> **Note**: On iOS, lifecycle binding is handled automatically by the library.
+
+### 3. Photo Capture
 
 ```kotlin
 // Simple capture
@@ -81,16 +131,17 @@ println("Captured ${result.bytes.size} bytes, ${result.width}x${result.height}")
 // Access EXIF orientation (Android) or embedded orientation (iOS)
 val orientationTag = result.exifOrientationTag // Android: ExifInterface constant, iOS: null
 val rotationDegrees = result.rotationDegrees   // Usually 0 (orientation in EXIF)
+val mimeType = result.mimeType                 // "image/jpeg"
 ```
 
-### 3. Camera Controls
+### 4. Camera Controls
 
 ```kotlin
 // Lens switching
-val newLens = controller.switchLens() // Returns Front or Back
+val newLens = controller.switchLens() // Returns Lens.FRONT or Lens.BACK
 
 // Flash modes
-controller.setFlash(Flash.Auto)
+controller.setFlash(Flash.AUTO)
 controller.setTorch(enabled = true)
 
 // Zoom control with bounds
@@ -99,43 +150,66 @@ val maxZoom = controller.maxZoom // e.g., 10.0f
 controller.setZoom(2.5f)
 
 // Observe zoom changes
-controller.zoomRatio.collectAsState().value
+val currentZoom by controller.zoomRatio.collectAsState()
 ```
 
-### 4. Frame Analysis (QR/Barcode)
+### 5. Camera Controls
+
+Access camera controls through the controller:
 
 ```kotlin
-class QrAnalyzer(private val onQrDetected: (String) -> Unit) : KuvaAnalyzer {
-    override fun analyze(frame: KuvaFrame) {
-        // Process YUV420 frame data
-        // frame.y, frame.u, frame.v contain pixel data
-        // frame.rotationDegrees indicates device orientation
-        // Use ZXing, ML Kit, or custom decoder
-        
-        // Example: Basic luminance processing
-        val luminance = frame.y // Y channel is luminance
-        // ... QR decoding logic
-    }
-}
+// Basic controls
+val newLens = controller.switchLens()
+controller.setFlash(Flash.AUTO)
+controller.setTorch(enabled = true)
+controller.setZoom(2.5f)
 
-val config = KuvaConfig(
-    analysis = AnalysisConfig(
-        analyzers = listOf(QrAnalyzer { qrContent ->
-            println("QR Code detected: $qrContent")
-        }),
-        backpressure = Backpressure.KeepLatest,
-        targetFps = 30 // Optional FPS hint
-    ),
-    aspectRatio = AspectRatioHint.Square
-)
+// Observe state
+val status by controller.status.collectAsState()
+val zoom by controller.zoomRatio.collectAsState()
 ```
+
+For a complete example with UI controls, see the `:kuva-samples` module.
+
+## Configuration Options
+
+- **lens**: `Lens.BACK` or `Lens.FRONT`
+- **flash**: `Flash.OFF`, `Flash.ON`, `Flash.AUTO`
+- **aspectRatio**: `DEFAULT`, `RATIO_4_3`, `RATIO_16_9`, `SQUARE`
+- **enableTapToFocus**: Enable/disable tap-to-focus (default: `true`)
+- **enforceCaptureAspectRatio**: Match capture to preview aspect ratio (default: `false`)
+
+## Status & Error Handling
+
+Monitor camera status and handle common errors:
+
+```kotlin
+val status by controller.status.collectAsState()
+// Status types: Idle, Initializing, Running, Error
+
+try {
+    controller.start()
+} catch (e: Error.PermissionDenied) {
+    // Request camera permission
+} catch (e: Error.CameraInUse) {
+    // Handle camera in use by another app
+}
+```
+
+For complete error handling patterns, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Installation
 
-Add to your `commonMain` dependencies:
+**Coming Soon**: Kuva will be published to Maven Central.
+
+For now, you can use the library by including it as a Git submodule or composite build:
 
 ```kotlin
-implementation("dev.nathanmkaya.kuva:kuva:1.0.0") // Not yet published
+// settings.gradle.kts
+includeBuild("path/to/kuva")
+
+// build.gradle.kts
+implementation(project(":kuva"))
 ```
 
 ### Platform Requirements
@@ -143,60 +217,53 @@ implementation("dev.nathanmkaya.kuva:kuva:1.0.0") // Not yet published
 **Android**: API 21+ (Android 5.0)  
 **iOS**: iOS 13.0+
 
-## Status & Error Handling
+### Permissions
 
-```kotlin
-// Observe camera status
-val status by controller.status.collectAsState()
-when (status) {
-    CameraStatus.Idle -> ShowStartButton()
-    CameraStatus.Initializing -> ShowLoadingSpinner()
-    CameraStatus.Running -> ShowCameraControls()
-    is CameraStatus.Error -> ShowError(status.reason)
-}
-
-// Handle specific errors
-try {
-    controller.start()
-} catch (e: KuvaError.PermissionDenied) {
-    requestCameraPermission()
-} catch (e: KuvaError.CameraInUse) {
-    showCameraBusyMessage()
-}
-```
-
-## Permissions
-
-### Android
+#### Android
 Add to `AndroidManifest.xml`:
 ```xml
 <uses-permission android:name="android.permission.CAMERA" />
 ```
 
-### iOS
+**Note**: On Android 6.0+ you must also request CAMERA permission at runtime before starting the camera.
+
+#### iOS
 Add to `Info.plist`:
 ```xml
 <key>NSCameraUsageDescription</key>
 <string>This app uses the camera to capture photos</string>
 ```
 
-## Advanced Usage
+## API Documentation
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed implementation information including:
-- Internal component design and responsibilities  
-- Platform-specific implementation details
-- Frame analysis architecture and plugin system
-- Threading model and performance considerations
-- Cross-platform compatibility considerations
+For detailed API reference, see:
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Complete architecture and API details
+- **API Documentation** - Generated API docs (coming soon)
 
-## Samples & Examples
+## Sample Application
 
-Check the `:kuva-samples` module for complete examples:
+Check the `:kuva-samples` module for a complete example featuring:
 - Basic camera integration with Compose Multiplatform
+- All camera controls (lens switching, flash, torch, zoom)
 - Tap-to-focus with visual feedback
-- All camera controls (lens, flash, zoom)  
-- QR code scanning with frame analysis
+- Pinch-to-zoom gesture support
+- Status monitoring and error handling
 - Permission handling patterns
+
+Run the sample:
+```bash
+# Android
+./gradlew :kuva-samples:installDebug
+
+# iOS (requires Xcode)
+./gradlew :kuva-samples:iosApp
+```
+
+## Architecture
+
+Kuva provides a unified camera API across Android (CameraX) and iOS (AVFoundation) with clean separation between business logic and platform implementations.
+
+For detailed architecture information, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## What's Not Included
 
@@ -207,13 +274,25 @@ Kuva focuses on **essential camera operations only**:
 ❌ Advanced camera modes (portrait, night, HDR)  
 ❌ Multi-lens orchestration  
 ❌ Built-in gallery/storage integration  
+❌ Frame analysis / ML integration
 ❌ Complex error taxonomies  
 
 **Future**: These may be added as separate optional modules.
 
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Run `./gradlew build` to ensure everything works
+6. Submit a pull request
+
 ## License
 
-Apache 2.0 License - see [LICENSE](LICENSE) for details.
+MIT License - see [LICENSE](LICENSE) for details.
+
+Copyright (c) 2025 Nathan Mkaya
 
 ---
 
