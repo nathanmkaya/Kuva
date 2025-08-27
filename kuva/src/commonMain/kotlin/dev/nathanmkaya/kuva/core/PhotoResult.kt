@@ -25,8 +25,21 @@ data class PhotoResult(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is PhotoResult) return false
-        return bytes.contentEquals(other.bytes) && width == other.width && height == other.height
+        return bytes.contentEquals(other.bytes) && 
+               width == other.width && 
+               height == other.height &&
+               rotationDegrees == other.rotationDegrees &&
+               exifOrientationTag == other.exifOrientationTag &&
+               mimeType == other.mimeType
     }
 
-    override fun hashCode(): Int = 31 * bytes.contentHashCode() + width + height
+    override fun hashCode(): Int {
+        var result = bytes.contentHashCode()
+        result = 31 * result + width
+        result = 31 * result + height
+        result = 31 * result + rotationDegrees
+        result = 31 * result + (exifOrientationTag ?: 0)
+        result = 31 * result + mimeType.hashCode()
+        return result
+    }
 }
