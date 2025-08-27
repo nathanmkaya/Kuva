@@ -102,11 +102,10 @@ private class IosController(private var config: Config, private val previewHost:
     private val _zoom = MutableStateFlow(1f)
     override val zoomRatio: StateFlow<Float> = _zoom.asStateFlow()
 
-    override var minZoom: Float = 1f
-        private set
+    override val minZoom: Float = 1f
 
-    override var maxZoom: Float = 1f
-        private set
+    private val _maxZoom = MutableStateFlow(1f)
+    override val maxZoom: StateFlow<Float> = _maxZoom.asStateFlow()
 
     override suspend fun start() {
         _status.update { CameraStatus.Initializing }
@@ -191,8 +190,7 @@ private class IosController(private var config: Config, private val previewHost:
     
     private fun updateZoomBounds() {
         device?.activeFormat?.let { fmt ->
-            minZoom = 1f
-            maxZoom = fmt.videoMaxZoomFactor.toFloat()
+            _maxZoom.update { fmt.videoMaxZoomFactor.toFloat() }
         }
     }
 

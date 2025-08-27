@@ -89,6 +89,7 @@ fun CameraScreen(
     // Observe status & zoom
     val status by controller.status.collectAsState()
     val zoom by controller.zoomRatio.collectAsState(initial = 1f)
+    val maxZoom by controller.maxZoom.collectAsState(initial = 1f)
 
     Surface(modifier = modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
@@ -128,7 +129,7 @@ fun CameraScreen(
                                         val newZoom =
                                             (currentZoom * zoomChange).coerceIn(
                                                 controller.minZoom,
-                                                controller.maxZoom,
+                                                maxZoom,
                                             )
                                         scope.launch { controller.setZoom(newZoom) }
                                     }
@@ -139,7 +140,7 @@ fun CameraScreen(
                     // Controls at the bottom
                     ControlsBar(
                         zoom = zoom,
-                        maxZoom = controller.maxZoom,
+                        maxZoom = maxZoom,
                         onSwitchLens = { scope.launch { controller.switchLens() } },
                         onToggleTorch = { enabled ->
                             scope.launch { controller.setTorch(enabled) }

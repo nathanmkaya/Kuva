@@ -14,7 +14,7 @@ interface Controller {
     val minZoom: Float
 
     /** The maximum zoom ratio supported by the camera. */
-    val maxZoom: Float
+    val maxZoom: StateFlow<Float>
 
     /** Starts the camera preview. */
     suspend fun start()

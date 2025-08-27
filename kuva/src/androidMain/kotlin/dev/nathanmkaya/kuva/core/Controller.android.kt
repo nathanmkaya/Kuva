@@ -61,11 +61,10 @@ private class AndroidController(private var config: Config, private val previewH
     private val _zoomRatio = MutableStateFlow(1f)
 
     override val zoomRatio: StateFlow<Float> = _zoomRatio.asStateFlow()
-    override var minZoom: Float = 1f
-        private set
+    override val minZoom: Float = 1f
 
-    override var maxZoom: Float = 1f
-        private set
+    private val _maxZoom = MutableStateFlow(1f)
+    override val maxZoom: StateFlow<Float> = _maxZoom.asStateFlow()
 
     override suspend fun start() {
         _status.update { CameraStatus.Initializing }
@@ -153,8 +152,7 @@ private class AndroidController(private var config: Config, private val previewH
         
         // Update zoom capabilities
         camera?.cameraInfo?.zoomState?.value?.let { zoomState ->
-            minZoom = zoomState.minZoomRatio
-            maxZoom = zoomState.maxZoomRatio
+            _maxZoom.update { zoomState.maxZoomRatio }
         }
     }
     
