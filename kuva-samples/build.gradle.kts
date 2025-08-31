@@ -46,7 +46,7 @@ kotlin {
 
             api("dev.icerock.moko:permissions:0.20.0")
             implementation("dev.icerock.moko:permissions-camera:0.20.0")
-            implementation("dev.icerock.moko:permissions-compose:0.20.0")
+            implementation("dev.icerock.moko:permissions-compose:0.20.1")
 
         }
         commonTest.dependencies {
