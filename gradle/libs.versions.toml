@@ -1,6 +1,6 @@
 
 [versions]
-cameraCore = "1.4.2"
+cameraCore = "1.6.2"
 cameraCamera2 = "1.4.2"
 kotlin = "2.2.10"
 kotlinx-io = "0.8.0"
